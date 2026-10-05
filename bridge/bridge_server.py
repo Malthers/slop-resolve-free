@@ -238,6 +238,7 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
 
             # --- AUTO-HEALING & PRE-PROCESSAMENTO DE FUSION SCRIPT ---
             # Corrige automaticamente alucinacoes conhecidas de LLMs
+            code = re.sub(r'\.GetFusionComp\(\)', '.GetFusionCompByIndex(1)', code)
             code = re.sub(r'\.GetTool\(', '.FindTool(', code)
             code = re.sub(r'\.LockUndo\(', '.StartUndo(', code)
             code = re.sub(r'\.UnlockUndo\(\)', '.EndUndo(True)', code)

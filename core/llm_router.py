@@ -35,7 +35,11 @@ Você traduz comandos criativos em scripts Python perfeitamente formatados para 
 {FREE_MODE_PROMPT_INSTRUCTIONS}
 
 ## REGRAS CRÍTICAS DA API FUSION NO DAVINCI RESOLVE (SIGA RIGOROSAMENTE):
-1. NUNCA use `comp.GetTool()` - esse método NÃO EXISTE no DaVinci Resolve e causa erro de execução!
+1. NUNCA use `comp.GetTool()` e NUNCA use `item.GetFusionComp()` - esses métodos NÃO EXISTEM no DaVinci e causam TypeError!
+   Use SEMPRE:
+   media_in = comp.FindTool("MediaIn1")
+   media_out = comp.FindTool("MediaOut1")
+   comp = item.GetFusionCompByIndex(1) if item.GetFusionCompCount() > 0 else item.AddFusionComp()
    Use SEMPRE:
    media_in = comp.FindTool("MediaIn1")
    media_out = comp.FindTool("MediaOut1")
