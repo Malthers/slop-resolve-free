@@ -1,6 +1,6 @@
 """
 Roteador e executor de LLMs via LiteLLM para o MasterEditor.
-Gerencia o System Prompt dinamico (Modo 100% Free, marcadores, timeline, regras de ouro e nos Fusion).
+Gerencia o System Prompt dinâmico (Modo 100% Free, marcadores, timeline, regras de ouro e nós Fusion).
 """
 
 import os
@@ -33,6 +33,43 @@ def build_system_prompt(timeline_state: dict = None) -> str:
 Você traduz comandos criativos em scripts Python perfeitamente formatados para o DaVinci Resolve e orienta o usuário com os caminhos nativos exatos da interface quando necessário.
 
 {FREE_MODE_PROMPT_INSTRUCTIONS}
+
+## REGRAS CRÍTICAS DA API FUSION NO DAVINCI RESOLVE (SIGA RIGOROSAMENTE):
+1. NUNCA use `comp.GetTool()` - esse método NÃO EXISTE no DaVinci Resolve e causa erro de execução!
+   Use SEMPRE:
+   media_in = comp.FindTool("MediaIn1")
+   media_out = comp.FindTool("MediaOut1")
+
+2. NUNCA use `.SetKeyFrame()` nem acesse parâmetros como atributos (ex: `merge.Blend.SetKeyFrame` NÃO EXISTE).
+   No DaVinci Fusion, keyframes são criados passando o número do frame como terceiro argumento de `SetInput`:
+   `merge.SetInput("Blend", 0.0, frame_inicio)`
+   `merge.SetInput("Blend", 1.0, frame_inicio + 6)`
+   `merge.SetInput("Blend", 1.0, frame_fim - 6)`
+   `merge.SetInput("Blend", 0.0, frame_fim)`
+
+3. Para cores no nó `TextPlus`, as cores do texto base são `Red1`, `Green1`, `Blue1` e `Alpha1`:
+   text.SetInput("Red1", 0.8)
+   text.SetInput("Green1", 0.1)
+   text.SetInput("Blue1", 1.0)
+   text.SetInput("Alpha1", 1.0)
+
+4. Padrão de Undo e Lock do Fusion:
+   comp.StartUndo("Nome da Acao")
+   comp.Lock()
+   try:
+       # cria e conecta os nós
+   finally:
+       comp.Unlock()
+       comp.EndUndo(True)
+
+5. Obtenção segura da composição do clipe:
+   target_item = None
+   for item in timeline.GetItemListInTrack("video", 1):
+       if item.GetStart() <= target_abs_frame < item.GetEnd():
+           target_item = item
+           break
+   if target_item:
+       comp = target_item.GetFusionCompByIndex(1) if target_item.GetFusionCompCount() > 0 else target_item.AddFusionComp()
 
 ## VARIÁVEIS PRÉ-DEFINIDAS NO ESCOPO PYTHON:
 - `resolve`: Instância raiz do DaVinci Resolve

@@ -10,11 +10,13 @@ Ele roda um servidor HTTP leve em 127.0.0.1:8955 para receber instrucoes do Mast
 import sys
 import io
 import json
+import re
 import threading
+from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 BRIDGE_PORT = 8955
-BRIDGE_VERSION = "2.1.0"
+BRIDGE_VERSION = "2.2.0"
 
 def get_resolve_objects():
     """Obtem os objetos nativos do DaVinci Resolve no ambiente interno."""
@@ -134,7 +136,6 @@ def gather_full_state():
         for v_clip in video_clips:
             has_audio = False
             for a_clip in audio_clips:
-                # Sobreposicao temporal de frames
                 if max(v_clip["start"], a_clip["start"]) < min(v_clip["end"], a_clip["end"]):
                     has_audio = True
                     break
@@ -235,6 +236,20 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": f"JSON invalido: {e}"})
                 return
 
+            # --- AUTO-HEALING & PRE-PROCESSAMENTO DE FUSION SCRIPT ---
+            # Corrige automaticamente alucinacoes conhecidas de LLMs
+            code = re.sub(r'\.GetTool\(', '.FindTool(', code)
+            code = re.sub(r'\.LockUndo\(', '.StartUndo(', code)
+            code = re.sub(r'\.UnlockUndo\(\)', '.EndUndo(True)', code)
+
+            # Salvar ultimo codigo executado para auditoria
+            try:
+                log_file = Path.home() / ".resolve-agent" / "last_executed_code.py"
+                log_file.parent.mkdir(parents=True, exist_ok=True)
+                log_file.write_text(code, encoding="utf-8")
+            except Exception:
+                pass
+
             objs = get_resolve_objects()
             scope = {
                 "resolve": objs["resolve"],
@@ -281,7 +296,7 @@ def start_server():
     print("\n=======================================================")
     print(f" 🟢 MasterEditorBridge ATIVO na porta {BRIDGE_PORT}")
     print(f" Versao: {BRIDGE_VERSION} (100% Compativel com DaVinci Free)")
-    print(f" Mapeamento inteligente de Video e Audio Ativo!")
+    print(f" Auto-Healing de Fusion Scripting Ativo (.FindTool)!")
     print(f" Aguardando comandos da interface grafica...")
     print("=======================================================\n")
     server.serve_forever()
