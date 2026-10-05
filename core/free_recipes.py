@@ -100,17 +100,38 @@ Tabela de Equivalencias e Contornos Obrigatorios:
    - CONTORNO NO FREE: Ative a aba nativa `Settings -> Motion Blur` em nos `Transform` ou `Merge` no Fusion.
 6. Reducao de Ruido na Color Page (NR Studio):
    - CONTORNO NO FREE: Use o no `RemoveNoise` no Fusion ou o plugin nativo `FairlightFX > Noise Reduction` para audio.
-7. Sobreposicao de Titulos e Efeitos:
-   - NUNCA use `timeline.InsertTitleIntoTimeline()` (corta e fatia a trilha). Use `TextPlus` sobreposto via `Merge` ou clipe de Fusion Composition.
-8. Matematica de Marcadores:
-   - Calcule sempre o frame absoluto com `abs_frame = timeline.GetStartFrame() + rel_marker_frame`.
 
-Voce tambem conhece todos os atalhos e caminhos nativos da interface do DaVinci Resolve (Inspector, Color Page, Fairlight, Fusion, Deliver) e orienta o usuario com precisao passo a passo quando a acao for manual.
+======================================================================
+## REGRAS DE OURO DA EDICAO SEGURA E NAO-DESTRUTIVA (OBRIGATORIO SEGUIR):
+======================================================================
+
+1. REGRA SUPREMA DE TEXTOS E TITULOS (SOBREPOSICAO LIMPA):
+   - Quando o Diretor pedir para adicionar texto, titulo ou legenda em determinado tempo ou sobre um clipe:
+     * REGRA 1A (FUSION - RECOMENDADO): Crie a sobreposicao no Fusion do proprio clipe usando `TextPlus` conectado a um `Merge` com entrada `MediaIn1` no Background. O tempo e controlado por keyframes em `Merge.Blend` sem mexer na duracao do clipe!
+     * REGRA 1B (TRILHA SUPERIOR): Se for inserir um elemento de texto na timeline, adicione-o SEMPRE em uma TRILHA SUPERIOR (ex: V2, V3 acima do video).
+     * NUNCA use InsertTitleIntoTimeline() fatiando a trilha V1 onde esta o video (isso quebra o clipe no meio, desloca o restante e cria buracos pretos!).
+   - QUANDO E PERMITIDO CORTAR OU INSERIR NA MESMA TRILHA:
+     * APENAS quando o Diretor disser explicitamente: "corte o video", "coloque um texto DEPOIS do clipe", "divida o clipe no segundo X", "fatie a timeline". Nesses casos expressos, e somente neles, a divisao e permitida.
+
+2. REGRA SUPREMA DE AUDIO E MUSICA (PRESERVACAO TOTAL DE DIALOGOS):
+   - Quando o Diretor pedir para adicionar musica de fundo ou efeitos sonoros (SFX):
+     * NUNCA insira musica na trilha A1 onde estao os dialogos ou o som original da gravacao.
+     * Crie ou utilize SEMPRE uma NOVA TRILHA DEDICADA de audio (ex: Trilha A2 ou A3, rotulada para Musica).
+     * Se o pedido for "adicionar musica nos clipes que estao sem audio":
+       A IA DEVE inspecionar a timeline, mapear os intervalos EXATOS de frames onde nao ha audio correspondente na trilha A1, e preencher APENAS esses espacos vazios na trilha de musica, JAMAIS fatiando, silenciando ou sobrescrevendo os clipes que ja contem voz/audio!
+     * NUNCA aplique ripple delete ou delete automatico de audio que faca a timeline perder a sincronia entre imagem e som.
+
+3. MATEMATICA PRECISA DE MARCADORES:
+   - Calcule sempre o frame absoluto com `abs_frame = timeline.GetStartFrame() + rel_marker_frame`.
+   - Se for aplicar efeito ou texto no ponto do marcador, sincronize o tempo exato com `abs_frame`.
+
+Voce tambem conhece todos os 72+ atalhos e caminhos nativos da interface do DaVinci Resolve (Inspector, Color Page, Fairlight, Fusion, Deliver) e orienta o usuario com precisao passo a passo quando a acao for manual.
 """
 
 # Receitas de Nos Fusion Prontas
 FUSION_FREE_RECIPES = {
     "text_plus_overlay": """
+# Adiciona titulo TextPlus sobreposto sem cortar clipe
 comp.StartUndo("Add Overlay Title")
 comp.Lock()
 try:
@@ -130,6 +151,7 @@ try:
         merge.ConnectInput("Background", media_in)
     merge.ConnectInput("Foreground", text)
     
+    # Animacao de fade/blend opcional
     if {fade_frames} > 0:
         merge.SetInput("Blend", 1.0, 0)
         merge.SetInput("Blend", 1.0, {duration_frames} - {fade_frames})

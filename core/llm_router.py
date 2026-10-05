@@ -1,6 +1,6 @@
 """
 Roteador e executor de LLMs via LiteLLM para o MasterEditor.
-Gerencia o System Prompt dinamico (Modo 100% Free, marcadores, timeline, caminhos de interface e nos Fusion).
+Gerencia o System Prompt dinamico (Modo 100% Free, marcadores, timeline, regras de ouro e nos Fusion).
 """
 
 import os
@@ -29,7 +29,7 @@ def save_config(cfg: dict):
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
 def build_system_prompt(timeline_state: dict = None) -> str:
-    prompt = f"""Você é o MasterEditor AI, um Diretor de Vídeo e Artista de Motion Graphics operando no DaVinci Resolve.
+    prompt = f"""Você é o MasterEditor AI, um Diretor de Vídeo e Artista de Motion Graphics operando no DaVinci Resolve Free.
 Você traduz comandos criativos em scripts Python perfeitamente formatados para o DaVinci Resolve e orienta o usuário com os caminhos nativos exatos da interface quando necessário.
 
 {FREE_MODE_PROMPT_INSTRUCTIONS}
@@ -43,14 +43,16 @@ Você traduz comandos criativos em scripts Python perfeitamente formatados para 
 - `media_pool`: MediaPool do projeto
 - `media_storage`: MediaStorage
 
-## COMPORTAMENTO DO DIRETOR (UX LIMPA):
+## COMPORTAMENTO DO DIRETOR (UX LIMPA E SEGURA):
 1. Primeiro explique resumidamente sua visão artística e o que será feito (cores, estilo, fontes, animações).
 2. Se a ação puder ser executada via script, forneça o script Python dentro de um bloco de código:
 ```python
 # Seu código aqui
 ```
 3. Se a ação for um ajuste nativo de interface (ex: Multicâmera, Elastic Wave, Fairlight, etc.), oriente o Diretor com o caminho exato do DaVinci (ex: 'Inspector > Video > Speed Change').
-4. NUNCA faça cortes destrutivos na timeline com InsertTitleIntoTimeline(). Para títulos e efeitos sobrepostos, use sempre nós do Fusion (TextPlus, Merge, Blend, Transform) ou Fusion Composition em faixa superior.
+4. SIGA RIGOROSAMENTE AS REGRAS DE EDIÇÃO NÃO-DESTRUTIVA:
+   - Textos/Títulos sobrepostos: SEMPRE via Fusion no clipe ou em trilha superior (V2/V3). NUNCA corte a trilha de vídeo para enfiar um texto no meio, a menos que o Diretor diga expressamente "corte o clipe" ou "coloque depois do clipe".
+   - Músicas e SFX: SEMPRE em trilha de áudio dedicada (A2/A3). NUNCA sobreponha ou corte trilhas com voz/áudio original. Preencha apenas os clipes que realmente não têm áudio!
 5. Mantenha os prints informativos para confirmar cada ação no console.
 """
 
@@ -63,6 +65,7 @@ Você traduz comandos criativos em scripts Python perfeitamente formatados para 
         v_tracks = timeline_state.get("video_tracks", 0)
         a_tracks = timeline_state.get("audio_tracks", 0)
         markers = timeline_state.get("markers", [])
+        silent_clips = timeline_state.get("silent_video_clips", [])
 
         prompt += f"""
 ## ESTADO ATUAL DA TIMELINE:
@@ -70,9 +73,15 @@ Você traduz comandos criativos em scripts Python perfeitamente formatados para 
 - Timeline: {tl_name}
 - Frame Inicial Absoluto: {start_frame} (Timecode: {start_tc})
 - Taxa de Quadros (FPS): {fps}
-- Trilhas de Vídeo: {v_tracks} | Áudio: {a_tracks}
+- Trilhas de Vídeo: {v_tracks} | Trilhas de Áudio: {a_tracks}
 - Total de Marcadores Ativos: {len(markers)}
+- Clipes de Vídeo SEM Áudio detectados: {len(silent_clips)}
 """
+        if silent_clips:
+            prompt += "\n## CLIPES SEM ÁUDIO (MUDOS) NA TIMELINE:\n"
+            for sc in silent_clips:
+                prompt += f"- Clipe '{sc['name']}' (Trilha V{sc['track']}): Frame {sc['start']} ao {sc['end']} (Duração: {sc['duration']} frames)\n"
+
         if markers:
             prompt += "\n## MARCADORES MAPEADOS NA TIMELINE:\n"
             for m in markers:
@@ -106,7 +115,6 @@ def call_llm_stream(messages: list, config: dict = None, timeline_state: dict = 
     api_key = cfg.get("api_key")
     api_base = cfg.get("api_base")
 
-    # Injetar api_key no ambiente se necessário
     if api_key:
         if "gemini" in model.lower():
             os.environ["GEMINI_API_KEY"] = api_key
@@ -136,7 +144,6 @@ def call_llm_stream(messages: list, config: dict = None, timeline_state: dict = 
             if content:
                 yield content
     except Exception as stream_err:
-        # Fallback transparente sem streaming
         try:
             kwargs["stream"] = False
             resp = litellm.completion(**kwargs)

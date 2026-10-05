@@ -4,7 +4,7 @@ MasterEditorBridge - Servidor de Ponte HTTP para DaVinci Resolve Free / Studio.
 Este script deve ser executado de dentro do DaVinci Resolve:
 Menu: Workspace > Scripts > MasterEditorBridge (ou Utility)
 
-Ele roda um servidor HTTP leve em 127.0.0.1:8955 para receber instruções do MasterEditor.
+Ele roda um servidor HTTP leve em 127.0.0.1:8955 para receber instrucoes do MasterEditor.
 """
 
 import sys
@@ -14,10 +14,10 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 BRIDGE_PORT = 8955
-BRIDGE_VERSION = "2.0.0"
+BRIDGE_VERSION = "2.1.0"
 
 def get_resolve_objects():
-    """Obtém os objetos nativos do DaVinci Resolve no ambiente interno."""
+    """Obtem os objetos nativos do DaVinci Resolve no ambiente interno."""
     global resolve, fusion
     res = globals().get("resolve")
     fus = globals().get("fusion")
@@ -53,7 +53,7 @@ def get_resolve_objects():
     }
 
 def gather_full_state():
-    """Coleta o estado completo da timeline ativa, resolvendo marcadores matematicamente."""
+    """Coleta o estado completo da timeline ativa, mapeando video, audio e marcadores."""
     objs = get_resolve_objects()
     res = objs["resolve"]
     proj = objs["project"]
@@ -70,6 +70,8 @@ def gather_full_state():
         "video_tracks": 0,
         "audio_tracks": 0,
         "clips": [],
+        "audio_clips": [],
+        "silent_video_clips": [],
         "markers": []
     }
 
@@ -84,7 +86,7 @@ def gather_full_state():
     except Exception as e:
         state["error_metadata"] = str(e)
 
-    # Coletar clipes de vídeo
+    # 1. Coletar clipes de video
     video_clips = []
     try:
         for track_idx in range(1, state["video_tracks"] + 1):
@@ -105,7 +107,50 @@ def gather_full_state():
     except Exception as e:
         state["error_clips"] = str(e)
 
-    # Coletar e resolver marcadores dinamicamente
+    # 2. Coletar clipes de audio
+    audio_clips = []
+    try:
+        for track_idx in range(1, state["audio_tracks"] + 1):
+            items = tl.GetItemListInTrack("audio", track_idx) or []
+            for it in items:
+                start_f = it.GetStart()
+                end_f = it.GetEnd()
+                name = it.GetName()
+                dur = it.GetDuration()
+                audio_clips.append({
+                    "name": name,
+                    "track": track_idx,
+                    "start": start_f,
+                    "end": end_f,
+                    "duration": dur
+                })
+        state["audio_clips"] = audio_clips
+    except Exception as e:
+        state["error_audio_clips"] = str(e)
+
+    # 3. Detectar clipes de video que estao sem audio correspondente
+    try:
+        silent_clips = []
+        for v_clip in video_clips:
+            has_audio = False
+            for a_clip in audio_clips:
+                # Sobreposicao temporal de frames
+                if max(v_clip["start"], a_clip["start"]) < min(v_clip["end"], a_clip["end"]):
+                    has_audio = True
+                    break
+            if not has_audio:
+                silent_clips.append({
+                    "name": v_clip["name"],
+                    "track": v_clip["track"],
+                    "start": v_clip["start"],
+                    "end": v_clip["end"],
+                    "duration": v_clip["duration"]
+                })
+        state["silent_video_clips"] = silent_clips
+    except Exception as e:
+        state["error_silent_detection"] = str(e)
+
+    # 4. Coletar e resolver marcadores dinamicamente
     try:
         raw_markers = tl.GetMarkers() or {}
         resolved_markers = []
@@ -135,7 +180,6 @@ def gather_full_state():
                 "matched_clip": matched_clip
             })
 
-        # Ordenar marcadores cronologicamente
         resolved_markers.sort(key=lambda m: m["relative_frame"])
         state["markers"] = resolved_markers
     except Exception as e:
@@ -188,7 +232,7 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
                 req_data = json.loads(body)
                 code = req_data.get("code", "")
             except Exception as e:
-                self._send_json(400, {"error": f"JSON inválido: {e}"})
+                self._send_json(400, {"error": f"JSON invalido: {e}"})
                 return
 
             objs = get_resolve_objects()
@@ -230,16 +274,16 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "Not Found"})
 
     def log_message(self, format, *args):
-        # Silencia logs HTTP comuns no terminal
         pass
 
 def start_server():
     server = HTTPServer(("127.0.0.1", BRIDGE_PORT), BridgeRequestHandler)
-    print(f"\n=======================================================")
+    print("\n=======================================================")
     print(f" 🟢 MasterEditorBridge ATIVO na porta {BRIDGE_PORT}")
-    print(f" Versão: {BRIDGE_VERSION} (100% Compatível com DaVinci Free)")
-    print(f" Aguardando comandos da interface gráfica...")
-    print(f"=======================================================\n")
+    print(f" Versao: {BRIDGE_VERSION} (100% Compativel com DaVinci Free)")
+    print(f" Mapeamento inteligente de Video e Audio Ativo!")
+    print(f" Aguardando comandos da interface grafica...")
+    print("=======================================================\n")
     server.serve_forever()
 
 if __name__ == "__main__":
