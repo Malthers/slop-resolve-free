@@ -40,12 +40,20 @@ Você traduz comandos criativos em scripts Python perfeitamente formatados para 
    media_in = comp.FindTool("MediaIn1")
    media_out = comp.FindTool("MediaOut1")
 
-2. NUNCA use `.SetKeyFrame()` nem acesse parâmetros como atributos (ex: `merge.Blend.SetKeyFrame` NÃO EXISTE).
-   No DaVinci Fusion, keyframes são criados passando o número do frame como terceiro argumento de `SetInput`:
-   `merge.SetInput("Blend", 0.0, frame_inicio)`
-   `merge.SetInput("Blend", 1.0, frame_inicio + 6)`
-   `merge.SetInput("Blend", 1.0, frame_fim - 6)`
-   `merge.SetInput("Blend", 0.0, frame_fim)`
+2. COMO DEFINIR OU ANIMAR BLEND / OPACIDADE NO MERGE:
+   - Se o efeito for fixo (sem animação de fade):
+     `merge.SetInput("Blend", 1.0)`  (NUNCA deixe Blend em 0.0 senão fica 100% invisível!)
+   - Se for animar fade in/out no Fusion, use SEMPRE o padrão nativo `BezierSpline`:
+     ```python
+     spline = comp.BezierSpline()
+     merge.SetInput("Blend", spline)
+     spline.SetKeyFrames({{
+         frame_inicio: {{1: 0.0}},
+         frame_inicio + 6: {{1: 1.0}},
+         frame_fim - 6: {{1: 1.0}},
+         frame_fim: {{1: 0.0}}
+     }})
+     ```
 
 3. Para cores no nó `TextPlus`, as cores do texto base são `Red1`, `Green1`, `Blue1` e `Alpha1`:
    text.SetInput("Red1", 0.8)
