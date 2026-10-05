@@ -1,129 +1,92 @@
-# Resolve AI Agent
+# 🎬 slop-resolve-free
 
-Control DaVinci Resolve with natural language. Describe what you want -- "make a cinematic intro", "add a countdown timer", "set up a ProRes render" -- and the agent figures out the technical details, generates the code, and executes it live.
+> **Assistente de Direção de IA para DaVinci Resolve focado 100% no Modo Gratuito (Free), com interface gráfica flutuante, escaneamento dinâmico de marcadores e receitas nativas sem marca d\'água.**
 
-Works with any LLM provider: Claude, GPT, Gemini, Ollama (local), OpenRouter, and 100+ others via litellm.
+Desenvolvido por **[Malthers](https://github.com/Malthers)**.
 
-## How It Works
+---
 
-The agent connects to your running DaVinci Resolve instance via its scripting API, gathers the current state (project, timeline, media pool, etc.), and sends your request along with the full Resolve API reference to the LLM. The LLM acts as a creative collaborator -- it makes its own decisions about which nodes, effects, animations, and settings to use based on your intent. The generated code is executed live, and if it fails, the agent automatically retries with the error context.
+## 🤝 Créditos e Agradecimento ao Projeto Original
 
-## Quick Start
+Este projeto é um fork evolutivo e especializado construído a partir do excelente trabalho de **[meigo](https://github.com/meigo)** no repositório original [slop-resolve](https://github.com/meigo/slop-resolve).
 
-**Prerequisites:** Python 3.6+, DaVinci Resolve (running)
+Enquanto o projeto original estabeleceu o conceito inovador de controlar o DaVinci Resolve via CLI em linguagem natural, o **slop-resolve-free** foi reestruturado para superar as limitações do **DaVinci Resolve Free** no Windows, transformar o terminal em uma **interface gráfica moderna flutuante**, e garantir que qualquer efeito solicitado seja construído **sem marcas d\'água da versão Studio**.
 
-    python resolve_agent.py
+---
 
-On first run, the setup wizard will:
+## 🚀 Principais Melhorias Implementadas nesta Edição
 
-1. Install the litellm package
-2. Ask you to choose an LLM provider
-3. Prompt for your API key (with a link to get one)
-4. Let you pick a model
-5. Save everything to ~/.resolve-agent/config.json
+### 1. 🛡️ 100% Focado no DaVinci Resolve Free (Sem Bloqueios de API)
+- No Windows, a versão Free do DaVinci Resolve bloqueia conexões externas diretas via script.
+- **A Solução:** Criamos uma **Ponte HTTP Interna** (MasterEditorBridge.py) que roda dentro do próprio DaVinci (Workspace > Scripts > MasterEditorBridge). Ela executa no processo nativo com permissões totais e expõe uma API local ultrarrápida em 127.0.0.1:8955.
 
-## Example Prompts
+### 2. 🎨 Política Anti-Studio (Zero Marcas d\'Água)
+- Se uma IA comum tentar aplicar efeitos Studio (como *Film Grain OFX*, *Face Refinement*, *Voice Isolation*, *Magic Mask* ou *Temporal Noise Reduction*), o DaVinci estampa a marca d\'água de compra e trava a renderização.
+- O **slop-resolve-free** possui um conjunto de regras e receitas em nós do **Fusion** e da **Color Page** que contornam os recursos pagos:
+  - **Granulação:** FastNoise monocromático animado via Merge (Soft Light / Overlay) sem marca d\'água.
+  - **Glow Cinematográfico:** Nós nativos SoftGlow / FastGlow.
+  - **Motion Blur:** Ativação na aba Settings -> Motion Blur nativa de qualquer nó Transform ou Merge.
+  - **Títulos e Overlays:** Inserção não-destrutiva sem fatiar clipes nem abrir buracos na timeline.
 
-You don't need to know the Resolve API. Just describe what you want:
+### 3. 🎯 Varredura Inteligente de Marcadores (🎯 Varrer Marcadores)
+- Leitura dinâmica do início da timeline com 	imeline.GetStartFrame().
+- Converte os frames relativos dos marcadores em frames absolutos de timecode, identificando exatamente qual clipe de vídeo está sob cada marcador e aplicando títulos ou efeitos com precisão cirúrgica de frames.
 
-| Category | Prompt |
-|----------|--------|
-| Fusion | `make a title card that says Episode 1` |
-| Fusion | `make a 5-second countdown timer` |
-| Fusion | `build an animated intro with a line draw and title fade` |
-| Fusion | `add a lower third: John Smith, Director` |
-| Fusion | `add floating particles on a dark background` |
-| Color | `give this clip a cinematic teal-and-orange look` |
-| Color | `key out the green screen on this clip` |
-| Render | `set up a ProRes 422 HQ render to my desktop` |
-| Media | `import the video from /Users/me/Downloads/podcast.mp4` |
-| Timeline | `create a new timeline called Rough Cut with 3 video tracks` |
-| AI | `add captions to this video` |
-| AI | `isolate the voice on the audio track` |
-| AI | `upscale this footage to 4x` |
+### 4. 🪟 Interface Gráfica Flutuante Always-on-Top (PyQt6)
+- Substitui o uso exclusivo por linha de comando por uma janela elegante que flutua sobre a interface do DaVinci Resolve.
+- Paleta de cores oficial do DaVinci Resolve (Dark Theme #181818, acentos em laranja #f05a28 e azul #4a90e2).
 
-Conversation history is preserved, so you can iterate: "make the text bigger", "add a glow", "slow down the animation". The agent modifies the existing composition in place.
+### 5. 🎬 Clean UX (O Usuário é o Diretor)
+- O chat não exibe centenas de linhas de código técnico Python para poluir a tela.
+- A IA responde como um Diretor Artístico, explicando o plano e as escolhas criativas.
+- O código é capturado em segundo plano e executado apenas após a confirmação no botão **[✅ Aprovar e Executar no DaVinci]**.
 
-## Supported Providers
+### 6. 🧠 Suporte Completo à Família Gemini 3.x Flash e Modelos Modernos
+- Suporte nativo e detector com filtro estrito para os novos modelos:
+  - **Gemini 3.8 Flash**
+  - **Gemini 3.7 Flash**
+  - **Gemini 3.6 Flash**
+  - **Gemini 3.5 Flash** e **3.5 Flash Lite**
+  - **Gemini 3.1 Flash Lite**
+  - Modelos Pro da linha 3.x e 2.5
+  - Suporte adicional a **OpenAI** (GPT-4o, o1, o3-mini), **OpenRouter**, **Ollama** e **LM Studio**.
+  - Filtro rigoroso: descarta automaticamente endpoints de imagem, TTS, robotics e transcrição.
 
-| Provider | Model examples | API key env var |
-|----------|---------------|-----------------|
-| Anthropic (Claude) | claude-sonnet-4-20250514, claude-opus-4-20250514 | ANTHROPIC_API_KEY |
-| OpenAI (GPT) | gpt-4o, gpt-4o-mini | OPENAI_API_KEY |
-| Google (Gemini) | gemini/gemini-2.5-pro, gemini/gemini-2.5-flash | GEMINI_API_KEY |
-| OpenRouter | openrouter/anthropic/claude-sonnet-4-20250514 | OPENROUTER_API_KEY |
-| Ollama (local) | ollama/llama3, ollama/mistral | none |
+### 7. ⚡ Inicializador de 1 Clique (INICIAR_PROJETO.bat)
+- Cria o ambiente virtual .venv automaticamente se não existir.
+- Instala todas as dependências necessárias.
+- Verifica e instala/atualiza automaticamente o script da ponte na pasta de utilitários do DaVinci:
+  %APPDATA%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\MasterEditorBridge.py
+- Inicia a interface gráfica pronta para uso.
 
-Any model supported by litellm works (https://docs.litellm.ai/docs/providers).
+---
 
-## Commands
+## 🛠️ Como Usar
 
-Inside the chat loop:
+### 1. Pré-requisitos
+- **Windows 10 ou 11**
+- **Python 3.10 ou superior** instalado e adicionado ao PATH.
+- **DaVinci Resolve** (versão Free 18, 19 ou superior) aberto.
 
-| Command | Action |
-|---------|--------|
-| model <name> | Switch model (e.g. model gpt-4o) -- saves to config |
-| model | Prompt to enter a model name |
-| setup | Re-run the full configuration wizard |
-| clear | Clear conversation history |
-| exit / quit / q | Quit |
+### 2. Inicialização Rápida
+Dê dois cliques no arquivo:
+`cmd
+INICIAR_PROJETO.bat
+`
 
-CLI flags:
+### 3. Conectando ao DaVinci Resolve
+1. No DaVinci Resolve, acesse o menu superior:
+   **Workspace > Scripts > MasterEditorBridge**
+2. A janela do **MasterEditor** mostrará instantaneamente:
+   🟢 DaVinci Resolve Conectado com o nome do seu projeto e timeline ativos.
+3. Clique em **⚙️ Configurar IA** para informar sua chave de API (Gemini, OpenAI, etc.) e escolher o seu modelo favorito.
+4. Comece a interagir! Use comandos livres como:
+   - *'Crie uma vinheta com fade nos primeiros 3 segundos'*
+   - *'Aplique granulação de cinema no clipe selecionado'*
+   - *'Clique em 🎯 Varrer Marcadores para analisar os pontos da sua timeline'*
 
-    python resolve_agent.py --setup       # Force reconfiguration
-    python resolve_agent.py -m gpt-4o     # Override model for this session
+---
 
-## What It Can Do
+## 📄 Licença
 
-Anything the DaVinci Resolve scripting API supports:
-
-- **Media import** -- import from any local path or URL, organize in media pool
-- **Project management** -- create, load, save projects
-- **Timeline editing** -- create timelines, add tracks, insert clips, set markers
-- **Color grading** -- set CDL values, apply LUTs, manage node graphs and versions
-- **Fusion compositing** -- create and modify Fusion compositions, animate nodes, build motion graphics
-- **Rendering** -- configure render settings, add jobs, start renders
-- **Fairlight audio** -- track management, voice isolation
-- **Introspection** -- query current state, list clips, inspect properties
-
-### AI Features
-
-The agent can trigger Resolve's built-in AI tools:
-
-- **Auto Captions** -- generate subtitles from speech (16+ languages)
-- **Scene Cut Detection** -- AI-detect and split cuts on the timeline
-- **Voice Isolation** -- isolate dialogue from background noise
-- **Magic Mask** -- AI-powered object/person masking
-- **Smart Reframe** -- auto-reframe footage to different aspect ratios
-- **SuperScale** -- AI upscaling (2x, 3x, 4x)
-
-Some Resolve AI features (IntelliCut, Dialogue Matcher, Music Editor, etc.) are not yet available via the scripting API and must be used from the Resolve UI.
-
-## Cross-Platform Support
-
-Works on macOS, Windows, and Linux. The agent auto-detects the platform and finds the Resolve scripting modules in the correct location.
-
-## Project Structure
-
-    resolve_agent.py        # Main entry point -- REPL loop and LLM integration
-    resolve_connection.py   # Connects to Resolve and gathers current state
-    resolve_api_ref.py      # Full Resolve scripting API reference
-    executor.py             # Sandboxed code execution for LLM-generated Python
-    setup.py                # First-run wizard -- installs packages, configures provider
-    requirements.txt        # litellm
-    tests/                  # Tests covering all modules
-
-## Running Tests
-
-    pip install pytest
-    python -m pytest tests/ -v
-
-Tests mock the Resolve API so they run without a Resolve instance.
-
-## How the API Reference Works
-
-The file resolve_api_ref.py contains the full DaVinci Resolve scripting API reference extracted from the README.txt bundled with Resolve. This is included in every LLM request so the model knows every available method, parameter, and return type. It adds ~15K tokens to the system prompt, which fits comfortably in modern context windows.
-
-## License
-
-MIT
+Este projeto é distribuído sob os termos da licença **MIT**, preservando os direitos e créditos originais de **meigo** (2025) e as melhorias e adaptações desenvolvidas por **Malthers** (2026). Consulte o arquivo LICENSE para mais detalhes.
