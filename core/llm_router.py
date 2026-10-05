@@ -1,13 +1,13 @@
 """
 Roteador e executor de LLMs via LiteLLM para o MasterEditor.
-Gerencia o System Prompt dinâmico (Modo 100% Free, marcadores, timeline e nós Fusion).
+Gerencia o System Prompt dinamico (Modo 100% Free, marcadores, timeline, caminhos de interface e nos Fusion).
 """
 
 import os
 import re
 import json
 from pathlib import Path
-from core.free_recipes import FREE_MODE_PROMPT_INSTRUCTIONS
+from core.free_recipes import FREE_MODE_PROMPT_INSTRUCTIONS, DAVINCI_FREE_WORKFLOWS_MAP
 
 CONFIG_DIR = Path.home() / ".resolve-agent"
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -30,11 +30,11 @@ def save_config(cfg: dict):
 
 def build_system_prompt(timeline_state: dict = None) -> str:
     prompt = f"""Você é o MasterEditor AI, um Diretor de Vídeo e Artista de Motion Graphics operando no DaVinci Resolve.
-Você traduz comandos criativos em scripts Python perfeitamente formatados para o DaVinci Resolve.
+Você traduz comandos criativos em scripts Python perfeitamente formatados para o DaVinci Resolve e orienta o usuário com os caminhos nativos exatos da interface quando necessário.
 
 {FREE_MODE_PROMPT_INSTRUCTIONS}
 
-## VARIÁVEIS PRÉ-DEFINIDAS NO ESCOPO:
+## VARIÁVEIS PRÉ-DEFINIDAS NO ESCOPO PYTHON:
 - `resolve`: Instância raiz do DaVinci Resolve
 - `fusion`: Instância do Fusion
 - `project_manager`: ProjectManager ativo
@@ -45,12 +45,13 @@ Você traduz comandos criativos em scripts Python perfeitamente formatados para 
 
 ## COMPORTAMENTO DO DIRETOR (UX LIMPA):
 1. Primeiro explique resumidamente sua visão artística e o que será feito (cores, estilo, fontes, animações).
-2. Em seguida, se houver alterações a fazer no DaVinci, forneça o script Python dentro de um bloco de código:
+2. Se a ação puder ser executada via script, forneça o script Python dentro de um bloco de código:
 ```python
 # Seu código aqui
 ```
-3. NÃO faça cortes destrutivos na timeline com InsertTitleIntoTimeline(). Para títulos e efeitos sobrepostos, use sempre nós do Fusion (TextPlus, Merge, Blend, Transform) ou Fusion Composition em faixa superior.
-4. Mantenha os prints informativos para confirmar cada ação no console.
+3. Se a ação for um ajuste nativo de interface (ex: Multicâmera, Elastic Wave, Fairlight, etc.), oriente o Diretor com o caminho exato do DaVinci (ex: 'Inspector > Video > Speed Change').
+4. NUNCA faça cortes destrutivos na timeline com InsertTitleIntoTimeline(). Para títulos e efeitos sobrepostos, use sempre nós do Fusion (TextPlus, Merge, Blend, Transform) ou Fusion Composition em faixa superior.
+5. Mantenha os prints informativos para confirmar cada ação no console.
 """
 
     if timeline_state and timeline_state.get("connected"):
@@ -141,4 +142,4 @@ def call_llm_stream(messages: list, config: dict = None, timeline_state: dict = 
             resp = litellm.completion(**kwargs)
             yield resp.choices[0].message.content or ""
         except Exception as e:
-            yield f"\n[Erro na comunicacao com a IA]: {str(e)}"
+            yield f"\n[Erro na comunicação com a IA]: {str(e)}"

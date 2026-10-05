@@ -1,54 +1,116 @@
 """
-Biblioteca de Receitas e Regras 100% Free para DaVinci Resolve.
-Projetada para contornar recursos exclusivos do DaVinci Studio (sem marcas d'agua)
-e pronta para receber novas tecnicas e caminhos customizados do usuario.
+Biblioteca de Receitas, Regras e Mapeamento de Caminhos 100% Free para DaVinci Resolve.
+Contem o catalogo de tecnicas, navegacao de interface e contornos de recursos Studio.
 """
 
-# Regras estritas Anti-Studio para injecao no System Prompt
+# Mapeamento Completo de Caminhos e Acoes no DaVinci Resolve (100% Free)
+DAVINCI_FREE_WORKFLOWS_MAP = {
+    "Alterar Velocidade do Video": "Inspector > Video > Speed Change",
+    "Exclusao por Propagacao / Apagar espaco vazio": "Edit > Ripple Delete",
+    "Sincronizar Audios Automaticamente": "Select clips > Right-click > Auto Align Clips > Based on Waveform",
+    "Criar Clipe Multicamera": "Select clips > Right-click > Create New Multicam Clip Using Selected Clips",
+    "Trocar Camera no Clipe Multicamera": "Right-click on multicam clip > Switch Multicam Clip Angle",
+    "Achatar/Mesclar Clipe Multicamera": "Right-click on multicam clip > Flatten Multicam Clip",
+    "Transicao Cruzada de Video": "Effects > Toolbox > Video Transitions > Cross Dissolve",
+    "Transicao Deslizante de Video": "Effects > Toolbox > Video Transitions > Edge Wipe",
+    "Texto Basico": "Effects > Toolbox > Titles > Text",
+    "Modos de Mesclagem / Overlay": "Inspector > Video > Composite > Composite Mode",
+    "Ajuste de Posicao, Zoom e Rotacao": "Inspector > Video > Transform",
+    "Ativar Animacao / Keyframes": "Inspector > Video > [Property] > Click the diamond icon (Keyframe)",
+    "Preencher Fundo Preto (Barras Pretas)": "Effects > Resolve FX Stylize > Blanking Fill",
+    "Alterar Duracao de Varios Clipes": "Edit Page > Select clips > Right-click > Change Clip Duration (Enable Trim Edit Mode to Ripple Delete gaps)",
+    "Copiar e Colar Transicoes": "Edit Page > Select Transition > Ctrl+C / Cmd+C > Click on splice point > Ctrl+V / Cmd+V",
+    "Copiar e Colar Espacos Vazios (Gaps)": "Edit Page > Select Space > Right-click > Copy > Go to desired point > Right-click > Paste",
+    "Velocidade Variavel / Speed Ramp": "Edit Page > Right-click Compound Clip > Change Clip Speed (turn off Pitch Correction) > Right-click > Retime Controls > Add Speed Points > Adjust Keyframe splines",
+    "Efeito Aparecer / Surgir para Texto": "Edit Page > Effects > Video Transitions > Cross Dissolve > Ease In and Out",
+    "Salvar Fontes Favoritas": "Edit Page > Effects > Text+ > Inspector > Font Drop-down > Click Font Browser Icon > Click Star to Favorite",
+    "Reverter Animacao / Efeito Undraw": "Edit Page > Inspector > Speed Change > Click Backwards Arrow (Reverse Speed)",
+    "Rodas de Cores / Claros, Medios e Escuros": "Color Page > Color Wheels > Primaries",
+    "Curvas de Cor Customizadas": "Color Page > Curves > Custom Curves",
+    "Adicionar Novo No de Cor": "Color Page > Nodes > Right-click > Add Node > Add Serial",
+    "Adicionar No Invertido / Selecao Externa": "Color Page > Nodes > Right-click > Add Node > Add Outside",
+    "Copiar Cor de Referencia de Outro Video": "Color Page > Select target clip > Right-click on reference clip > Shot Match to this Clip",
+    "Mascaras de Corte e Foco / Power Windows": "Color Page > Window > [Select shape: Circle, Polygon, etc.]",
+    "Rastreamento Automatico de Mascara": "Color Page > Tracker > Track Forward / Track Reverse",
+    "Isolamento de Cor Especifica / Chroma": "Color Page > Qualifier > HSL Qualifier",
+    "Gerenciamento de Espaco de Cor do Projeto": "Project Settings > Color Management > Color Science > DaVinci YRGB Color Managed",
+    "Transformacao de Espaco de Cor via No / CST": "Effects > Open FX > Filters > Resolve FX Color > Color Space Transform",
+    "Atribuir Espaco de Cor Original ao Clipe": "Media Pool > Right-click on clip > Input Color Space",
+    "Deixar Video em Preto e Branco": "Color Page > RGB Mixer > Monochrome",
+    "Controles de Camera RAW": "Color Page > Camera RAW (First icon below viewer)",
+    "Rodas de Cores de Alta Faixa Dinamica": "Color Page > HDR Wheels",
+    "Distorcao Seletiva de Cor / Teia de Cor": "Color Page > Color Warper",
+    "Borrar Rosto / Censurar com Mosaico": "Effects > Open FX > Filters > Resolve FX Blur > Mosaic Blur",
+    "Salvar Preset de Cor / Grab Still": "Color Page > Viewer > Right-click > Grab Still",
+    "Habilitar Mapeamento de Tons / Dolby Vision": "Project Settings > Color Management > Dolby Vision > Enable Dolby Vision",
+    "Alterar Cor de Animacoes Prontas": "Color Page > Primary Wheels > Gain > Adjust Center Dot",
+    "Normalizar Niveis de Audio": "Right-click on audio clip > Normalize Audio Levels",
+    "Normalizar Volume dos Dialogos": "Right-click on audio clip > Normalize Audio Levels > Target Level (ex: -10 dBFS)",
+    "Alterar Audio de Estereo para Mono": "Right-click on audio clip > Clip Attributes > Audio > Format: Mono",
+    "Visualizar Faixas de Video na aba Audio": "Fairlight > Timeline Options (Icone no topo esquerdo) > Video Tracks",
+    "Reproduzir Audio em Looping": "Playback > Play Around/To > Play In to Out (ou botao Loop)",
+    "Desativar Clipe Individual de Audio": "Tecla M (Mute/Unmute) ou Inspector > Audio > Desmarcar Clip Enable",
+    "Mover Audio para Faixa Abaixo": "Timeline > Move Audio Track Destination Down (Alt + Ctrl + Seta para Baixo)",
+    "Cortar Clipe de Audio com a Navalha": "Barra de Ferramentas > Razor Tool (Tecla B)",
+    "Testar Efeito de Audio sem Substituir (Audition)": "Fairlight > Sound Library > Right-click on sound > Audition",
+    "Copiar Audio para Camadas (Layering)": "View > Show Audio Track Layers > Alt + Arrastar o audio",
+    "Alterar Velocidade do Audio (Elastic Wave)": "Right-click on audio clip > Elastic Wave",
+    "Alterar Afinacao (Voz Fina/Grossa)": "Inspector > Audio > Pitch",
+    "Efeito Chorus (Voz de Robo/Modulador)": "Effects > FairlightFX > Chorus",
+    "Efeito Reverb (Voz na Catedral/Sala)": "Effects > FairlightFX > Reverb",
+    "Ouvir Audio Atras da Parede / Abafado (EQ)": "Mixer > EQ (Equalizer) > Ativar Banda 6 > Reduzir Agudos (High Cut)",
+    "Reducao de Ruido Constante / Hiss": "Effects > FairlightFX > Noise Reduction",
+    "Remover Ruido Eletrico / Hum": "Effects > FairlightFX > De-Hummer",
+    "Gerar Cache do Efeito de Audio": "Right-click on track or clip > Cache Audio Effects",
+    "Exportar Audio com Efeito Renderizado": "Right-click on track > Bounce Audio Effects",
+    "Remover Fundo Verde / Chroma Key": "Effects > Open FX > Filters > Resolve FX Key > 3D Keyer (ou DeltaKeyer no Fusion)",
+    "Remover Reflexo Verde do Fundo / Despill": "Inspector > Effects > Open FX > 3D Keyer > Despill",
+    "Mosaico de Videos / Colagem": "Effects > Open FX > Filters > Resolve FX Transform > Video Collage",
+    "Atrasar Movimento de Clipes / Time Offset": "Fusion Page > Shift + Spacebar > Add Duplicate Node > Time Offset",
+    "Efeito Caminhar por Dentro de um Texto (Bypass Free)": "Fusion Page > TextPlus Node com Keyframe > Duplicar Video > Mascara Bezier/BSpline rastreada com Point Tracker (dispensa Magic Mask pago) > Merge",
+    "Efeito Tilt-Shift Blur (Bypass Free)": "Fusion Page > No Blur/Defocus conectado a uma mascara Rectangle com Soft Edge maximo e invertida (dispensa Tilt-Shift OFX Studio)",
+    "Gerar Arquivo Proxy pelo Programa": "Media Pool > Right-click on clip > Generate Proxy Media",
+    "Ativar Reproducao via Proxy": "Playback > Proxy Handling > Prefer Proxies",
+    "Diminuir Resolucao da Timeline": "Playback > Timeline Proxy Resolution > Half / Quarter",
+    "Trocar Imagem de Capa do Projeto / Poster Frame": "Media Pool > Double-click clip > Playhead no frame desejado > Right-click > Clip Operations > Set Project Poster Frame",
+    "Abrir Duas Pastas no Media Pool Simultaneamente": "Media Pool > Menu de tres pontos > Dual Pane Media Pool",
+    "Configuracoes de Exportacao Customizadas": "Deliver Page > Render Settings > Custom",
+    "Exportar Clipes Separados / Dailies": "Deliver Page > Render Settings > Video > Render: Individual clips",
+    "Inserir Marca d'agua ou Timecode na Tela": "Workspace > Data Burn-In > Custom Text"
+}
+
+# Diretrizes Estritas para o System Prompt
 FREE_MODE_PROMPT_INSTRUCTIONS = """
 ## DIRETRIZES ESTRITAS: MODO 100% DAVINCI RESOLVE FREE (ANTI-MARCA D'AGUA)
-Voce esta operando em um ambiente DaVinci Resolve FREE.
-E ABSOLUTAMENTE PROIBIDO gerar codigos que invoquem plugins ou recursos exclusivos do Studio que geram marcas d'agua ou erros de licenca.
+Voce opera estritamente no DaVinci Resolve FREE.
+E PROIBIDO sugerir ou injetar plugins exclusivos do Studio que gerem marcas d'agua ou erros de licenca.
 
-Recursos Proibidos (Studio) vs. Contorno Obrigatorio (Free):
-1. Granulacao (Film Grain OFX):
-   - NUNCA use o plugin Film Grain OFX do Studio.
-   - CONTORNO NO FUSION: Crie um no `FastNoise` monocromatico com `SeetheRate` animado (ex: 0.05), conectado a um no `Merge` em modo de mesclagem Soft Light ou Overlay com Blend reduzido (0.15 a 0.25).
+Tabela de Equivalencias e Contornos Obrigatorios:
+1. Tilt-Shift Blur:
+   - O plugin OFX Tilt-Shift e Studio (pago).
+   - CONTORNO NO FREE: No Fusion, use um no `Blur` ou `Defocus` associado a uma mascara de gradiente linear suave invertida, mantendo o meio nitido e as bordas desfocadas.
+2. Isolamento de Pessoas / Text Walk-Through:
+   - O Magic Mask e recurso pago do Studio.
+   - CONTORNO NO FREE: No Fusion, crie uma mascara `Polygon` ou `BSpline` conectada a um `Point Tracker` ou use o `DeltaKeyer` se houver contraste suficiente.
+3. Granulacao (Film Grain OFX Studio):
+   - CONTORNO NO FREE: No Fusion, use `FastNoise` monocromatico animado com `SeetheRate` conectado a um `Merge` em modo Soft Light com blend suave (0.15 - 0.25).
+4. Brilho / Glow Studio:
+   - CONTORNO NO FREE: Use os nos nativos `SoftGlow` ou `FastGlow`.
+5. Motion Blur OFX Studio:
+   - CONTORNO NO FREE: Ative a aba nativa `Settings -> Motion Blur` em nos `Transform` ou `Merge` no Fusion.
+6. Reducao de Ruido na Color Page (NR Studio):
+   - CONTORNO NO FREE: Use o no `RemoveNoise` no Fusion ou o plugin nativo `FairlightFX > Noise Reduction` para audio.
+7. Sobreposicao de Titulos e Efeitos:
+   - NUNCA use `timeline.InsertTitleIntoTimeline()` (corta e fatia a trilha). Use `TextPlus` sobreposto via `Merge` ou clipe de Fusion Composition.
+8. Matematica de Marcadores:
+   - Calcule sempre o frame absoluto com `abs_frame = timeline.GetStartFrame() + rel_marker_frame`.
 
-2. Brilho / Glow Studio:
-   - NUNCA use Aperture Glow ou Studio Glow OFX.
-   - CONTORNO NO FUSION: Use os nos nativos `SoftGlow` ou `FastGlow` com ganho ajustado.
-
-3. Desfoque de Movimento (Motion Blur OFX):
-   - NUNCA use o plugin de Motion Blur OFX da timeline.
-   - CONTORNO NO FUSION: Ative o Motion Blur nativo nos nos de movimento:
-     `tool.SetInput("MotionBlur", 1)`
-     `tool.SetInput("Quality", 4)`
-     `tool.SetInput("ShutterAngle", 180.0)`
-     (Disponivel nativamente na aba Settings de Transform e Merge no Free).
-
-4. Isolamento de Objeto / Mascaras (Magic Mask Neural Engine):
-   - NUNCA use Magic Mask.
-   - CONTORNO: Use Power Windows com rastreador na pagina Color, ou no Fusion use `DeltaKeyer`, `Polygon` ou `BSpline` com o Point Tracker nativo.
-
-5. Reducao de Ruido (Temporal/Spatial NR):
-   - NUNCA use reducao de ruido da Color Page que requer licenca Studio.
-   - CONTORNO: Faca no Fusion com `RemoveNoise` nativo ou na Color Page com mascaras HSL atenuando altas frequencias em sombras.
-
-6. Sobreposicao de Titulos e Efeitos:
-   - NUNCA use `timeline.InsertTitleIntoTimeline()` pois ela corta a timeline e abre buracos na trilha.
-   - CONTORNO: Sempre crie composicoes no Fusion dentro do clipe com `TextPlus` sobreposto via `Merge`, ou insira clipes de Fusion Composition em trilha superior sem fatiar o video original.
-
-7. Matematica de Marcadores:
-   - Os marcadores da timeline (`timeline.GetMarkers()`) retornam frames RELATIVOS ao inicio da timeline.
-   - O frame absoluto de timecode de cada clipe e: `abs_frame = timeline.GetStartFrame() + rel_frame`.
-   - Sempre use `timeline.GetStartFrame()` para sincronizar com precisao cirurgica.
+Voce tambem conhece todos os atalhos e caminhos nativos da interface do DaVinci Resolve (Inspector, Color Page, Fairlight, Fusion, Deliver) e orienta o usuario com precisao passo a passo quando a acao for manual.
 """
 
-# Registro de receitas de nos Fusion prontas para uso
+# Receitas de Nos Fusion Prontas
 FUSION_FREE_RECIPES = {
     "text_plus_overlay": """
-# Adiciona titulo TextPlus sobreposto sem cortar clipe
 comp.StartUndo("Add Overlay Title")
 comp.Lock()
 try:
@@ -68,7 +130,6 @@ try:
         merge.ConnectInput("Background", media_in)
     merge.ConnectInput("Foreground", text)
     
-    # Animacao de fade/blend opcional
     if {fade_frames} > 0:
         merge.SetInput("Blend", 1.0, 0)
         merge.SetInput("Blend", 1.0, {duration_frames} - {fade_frames})
@@ -82,7 +143,6 @@ finally:
 """,
 
     "free_film_grain": """
-# Granulacao de Filme 100% Free com FastNoise no Fusion
 comp.StartUndo("Add Free Film Grain")
 comp.Lock()
 try:
@@ -116,35 +176,34 @@ finally:
     comp.EndUndo(True)
 """,
 
-    "free_soft_glow": """
-# Efeito de Brilho / SoftGlow 100% Free
-comp.StartUndo("Add Free SoftGlow")
+    "free_tilt_shift": """
+comp.StartUndo("Add Free Tilt-Shift")
 comp.Lock()
 try:
     media_out = comp.FindTool("MediaOut1")
     media_in = comp.FindTool("MediaIn1")
     
-    glow = comp.AddTool("SoftGlow", -32768, -32768)
-    glow.SetInput("Gain", 0.4)
-    glow.SetInput("GlowSize", 15.0)
+    blur = comp.AddTool("Blur", -32768, -32768)
+    blur.SetInput("XBlurSize", 12.0)
+    blur.SetInput("YBlurSize", 12.0)
     
+    mask = comp.AddTool("RectangleMask", -32768, -32768)
+    mask.SetInput("Width", 1.0)
+    mask.SetInput("Height", 0.25)
+    mask.SetInput("SoftEdge", 0.20)
+    mask.SetInput("Invert", 1)
+    
+    blur.ConnectInput("EffectMask", mask)
     if media_in:
-        glow.ConnectInput("Input", media_in)
+        blur.ConnectInput("Input", media_in)
     if media_out:
-        media_out.ConnectInput("Input", glow)
+        media_out.ConnectInput("Input", blur)
 finally:
     comp.Unlock()
     comp.EndUndo(True)
 """
 }
 
-# Dicionario extensivel onde novos caminhos enviados pelo usuario serao registrados
-CUSTOM_USER_FREE_PATHS = {}
-
-def register_custom_path(name: str, description: str, steps: list, code_template: str = ""):
-    """Registra uma nova tecnica ou caminho Free fornecido pelo usuario."""
-    CUSTOM_USER_FREE_PATHS[name] = {
-        "description": description,
-        "steps": steps,
-        "code_template": code_template
-    }
+def get_workflow_path(action_name: str) -> str:
+    """Retorna o caminho exato de menus no DaVinci para uma determinada acao."""
+    return DAVINCI_FREE_WORKFLOWS_MAP.get(action_name, "")
